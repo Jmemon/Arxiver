@@ -1,9 +1,9 @@
 
-from flask import Blueprint
+from flask import Blueprint, render_template
 
-qa_blueprint = Blueprint('qa_api', __name__)
+from . import qa_blueprint
 
 
-@qa_blueprint.route('/simple', methods=['GET'])
+@qa_blueprint.route('/qa', methods=['GET'])
 def simple_respond():
-    return render_template('qa/simple.html')
+    return render_template('qa.html')

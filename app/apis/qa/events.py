@@ -1,6 +1,8 @@
 
+from flask_socketio import emit
 
-from llm import get_llama
+from app import socketio
+from app.llm import get_llama
 
 llm = get_llama()
 
@@ -10,10 +12,11 @@ def stream_llm_output(prompt):
         yield chunk
 
 
-@socketio.on('message', namespace='/qa/simple')
+@socketio.on('message', namespace='/qa')
 def handle_message(message):
     # Assuming message contains the prompt for the LLM
     prompt = message.get('prompt')
     if prompt:
         for chunk in stream_llm_output(prompt):
-            emit('response', {'data': chunk}, namespace='/qa/simple')
+            print(chunk)
+            emit('response', {'data': chunk}, namespace='/qa')

@@ -83,9 +83,9 @@ def get_llama():
 
 def get_llama():
     return LlamaCpp(
-            model_path=str(Path(__file__).parent / 'models' / 'llama-2-7b-chat.Q4_K_M.gguf'),
+            model_path=str(Path(__file__).parent / 'models' / 'llama-2-7b-chat.Q5_K_M.gguf'),
             temperature=0.75,
-            max_tokens=10,
+            max_tokens=20,
             top_p=1,
             n_gpu_layers=50,
             n_batch=512,

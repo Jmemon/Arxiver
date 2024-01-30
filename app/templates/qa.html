@@ -22,16 +22,20 @@
     <div id="response"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
     <script>
-        var socket = io.connect('http://' + document.domain + ':' + location.port + '/qa/simple');
+        var dt = new Date()
+
+        var socket = io.connect('http://' + document.domain + ':' + location.port + '/qa');
+        var responseArea = document.getElementById('response');
 
         function sendPrompt() {
             var prompt = document.getElementById('prompt').value;
             socket.emit('message', { prompt: prompt });
+            responseArea.innerHTML = ''
         }
 
         socket.on('response', function(data) {
-            var responseArea = document.getElementById('response');
-            responseArea.innerHTML += data.data + '\\n';
+            console.log(`${dt.getTime()}`)
+            responseArea.innerHTML += data.data;
         });
     </script>
 </body>
