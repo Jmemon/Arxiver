@@ -1,12 +1,12 @@
 
-from flask import Flask
+import eventlet
+eventlet.monkey_patch()
 
-from apis.qa import qa_blueprint, stream_llm_output
+from app import socketio, create_app
 
-
-app = Flask(__name__)
-app.register_blueprint(qa_blueprint, url_prefix='/qa')
+app = create_app()
 
 
 if __name__ == '__main__':
-    app.run('127.0.0.1', 8080)
+    socketio.run(app, '127.0.0.1', 8080, log_output=True)
+    
