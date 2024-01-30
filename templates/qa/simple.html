@@ -4,7 +4,6 @@
     <title>LLM Stream</title>
 </head>
 <body>
-    <h1>LLM Streaming Output</h1>
     <div id="llm-output"></div>
 
     <script>
@@ -13,9 +12,14 @@
         const queryParams = new URLSearchParams(window.location.search).toString();
         const eventSource = new EventSource(`/qa/simple?${queryParams}`);
 
-        eventSource.onmessage = function(e) {
+        eventSource.onmessage = function(evt) {
+            console.log(evt.data)
             // Append each new message to the output div
-            outputDiv.innerHTML += `<p>${e.data}</p>`;
+            outputDiv.innerHTML += `${evt.data}`;
+        };
+
+        eventSource.onerror = function(error) {
+            console.error("EventSource failed:", error);
         };
     </script>
 </body>

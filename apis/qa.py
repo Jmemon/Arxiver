@@ -1,13 +1,16 @@
 
-from flask import request, Blueprint, Response, stream_with_context, render_template
-from langchain.schema import HumanMessage
+import asyncio
+import io
+import contextlib
 
-from llm import get_llm
+from flask import request, Blueprint, Response, stream_with_context, render_template
+
+from llm import get_llama
 
 
 qa_blueprint = Blueprint('qa_api', __name__)
 
-llm = get_llm()
+llm = get_llama()
 
 
 """
@@ -15,10 +18,17 @@ For all routes /qa will be pre-pended when we register the blueprint in app.py
 """
 
 
+def stream_llm_output(prompt):
+    for chunk in llm.stream(prompt):
+        yield chunk
+
 @qa_blueprint.route('/simple', methods=['GET'])
 def simple_respond():
-    prompt = request.args.get('prompt')
     if request.headers.get('accept') == 'text/event-stream':
-        return Response(stream_with_context(llm.stream(prompt)), content_type='text/event-stream')
+        prompt = request.args.get('prompt')
+        return Response(
+            stream_with_context(stream_llm_output(prompt)), 
+            status=200,
+            content_type='text/event-stream')
     else:
         return render_template('qa/simple.html')
