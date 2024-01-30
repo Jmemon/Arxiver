@@ -1,7 +1,4 @@
 
 __pycache__
 
-tmp__main__.py
-__main__.py
-
-models/*
+app/models/*
