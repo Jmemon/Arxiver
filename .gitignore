@@ -3,4 +3,6 @@
 __pycache__
 .DS_Store
 
-app/models/*
+llm/weights/*
+test.py
+papers/*
