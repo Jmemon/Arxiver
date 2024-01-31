@@ -1,4 +1,5 @@
 
+import eventlet
 from flask_socketio import emit
 
 from app import socketio
@@ -18,5 +19,7 @@ def handle_message(message):
     prompt = message.get('prompt')
     if prompt:
         for chunk in stream_llm_output(prompt):
-            print(chunk)
             emit('response', {'data': chunk}, namespace='/qa')
+            # This forces the server to take control for a brief second so the LLM isn't taking up
+            # all processing power. Otherwise all tokens are emitted after they're all generated
+            eventlet.sleep(0)
