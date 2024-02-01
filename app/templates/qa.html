@@ -19,6 +19,7 @@
     <h1>LLM QA</h1>
     <input type="text" id="prompt" placeholder="Enter your prompt here" size="50">
     <button onclick="sendPrompt()">Send Prompt</button>
+    <button onclick="stopResponse()">Stop</button>
     <div id="response"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
     <script>
@@ -30,6 +31,10 @@
             var prompt = document.getElementById('prompt').value;
             socket.emit('message', { prompt: prompt });
             responseArea.innerHTML = ''
+        }
+
+        function stopResponse() {
+            socket.emit('stop')
         }
 
         socket.on('response', function(data) {
