@@ -3,14 +3,9 @@ import eventlet
 from flask_socketio import emit
 
 from app import socketio
-from llm.llm import get_llama
+from llm import get_llama, llama_path
 
-llm = get_llama()
-
-
-def stream_llm_output(prompt):
-    for chunk in llm.stream(prompt):
-        yield chunk
+llm = get_llama(llama_path)
 
 
 @socketio.on('message', namespace='/qa')
