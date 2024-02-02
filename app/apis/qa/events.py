@@ -3,9 +3,9 @@ import eventlet
 from flask_socketio import emit
 
 from app import socketio
-from llm import llama, starling, LLMStreamer
+from llm.models import llama7b, starling7b, wizardlm13b
 
-llm = starling(temperature=0)
+llm = wizardlm13b(max_tokens=1024, temperature=1, top_p=1)
 stop_flag = False
 
 
