@@ -1,6 +1,68 @@
 
 from langchain.prompts import ChatPromptTemplate
 
+
+"""
+Best one yet.
+=====
+parameters: num_queries=five, topic=language model inference optimization
+response:
+
+
+1. Efficient Inference
+2. Neural Architecture Search
+3. Knowledge Distillation
+4. Low-Rank Approximation
+5. Tensor Decomposition.
+===== Could combine these together into search queries or something
+parameters: num_queries=fifteen, topic=latent variable models in speech processing
+response:
+
+
+1. Latent Variable Model (LVMM)
+2. Factor Analysis (FA)
+3. Principal Component Analysis (PCA)
+4. Independent Component Analysis (ICA)
+5. Non-Negative Matrix Factorization (NMF)
+6. Gaussian Mixture Model (GMM)
+7. Hidden Markov Model (HMM)
+8. Long Short-Term Memory (LSTM)
+9. Recurrent Neural Networks (RNNs)
+10. Convolutional Neural Networks (CNNs)
+11. Autoencoder (AE)
+12. Variational Autoencoder (VAE)
+13. Generative Adversarial Network (GAN)
+14. Deep Belief Network (DBN)
+15. Restricted Boltzmann Machine (RBM)
+===== Eh response. Some of these aren't latent variable models and no mention of speech processing
+parameters: num_queries=fiftenn, topic=cosmic background radiation
+response:
+
+
+1. Cosmic Microwave Background (CMB)
+2. Anisotropy
+3. Temperature fluctuations
+4. Redshift
+5. Inflation theory
+6. Quasars
+7. Dark matter
+8. Sunyaev-Zeldovich effect
+9. CMB maps
+10. Power spectrum
+11. Cosmological principle
+12. Large scale structure of the universe
+13. Reionization
+14. Galaxy clusters
+15. Foreground emission.
+===== This seems like a pretty solid response. I think most of these are related. Some might not be.
+"""
+keyword_list_prompt = ChatPromptTemplate.from_messages([
+    ('human', 'Give me a numbered list of {num_queries} keywords related to {topic} to '
+              'be used as search queries with no explanations.')
+])
+
+
+
 """
 I might like this one the most. The extra newlines at the start of responses is from the actual response, not an accident.
 
@@ -38,7 +100,7 @@ parameters: num_queries=give, topic= language model inference optimization
 4. GPU utilization in large scale language model inference optimization
 5. Memory management strategies in language model inference optimization.
 """
-keyword_list_prompt = ChatPromptTemplate.from_messages([
+keyword_query_list_prompt = ChatPromptTemplate.from_messages([
     ('human', 'Give me a numbered list of {num_queries} search queries about various aspects of {topic}, '
               'where each search should be an individual keyword related to the topic with no explanations.')
 ])
