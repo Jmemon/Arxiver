@@ -3,6 +3,7 @@
 __pycache__
 .DS_Store
 
-llm/weights/*
+bot/weights/*
 test.py
 papers/*
+logs/*
