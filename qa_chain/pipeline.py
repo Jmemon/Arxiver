@@ -59,12 +59,13 @@ def get_text_vectorstore(paper_paths: List[Path] | Path, vdb_name: str | None = 
 
     else:
         vdb = Chroma.from_documents(
-            reduce(
-                lambda x, y: x + y, 
-                [[Document(el) for el in get_pdf_chunks(paper_path)] for paper_path in paper_paths], 
-                []
-            ), 
-            embedding=HuggingFaceEmbeddings())
+                reduce(
+                    lambda x, y: x + y, 
+                    [[Document(el) for el in get_pdf_chunks(paper_path)] for paper_path in paper_paths], 
+                    []
+                ), 
+                embedding=HuggingFaceEmbeddings(),
+                persist_directory=str(Path(__file__).parent.parent / 'vectorstores'))
         vdb.persist()
 
     return vdb
