@@ -3,7 +3,11 @@
 __pycache__
 .DS_Store
 
-bot/weights/*
+.env
+
+qa_chain/weights/*
 test.py
 papers/*
 logs/*
+vectorstores/*
+tmp/*

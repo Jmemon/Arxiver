@@ -6,7 +6,7 @@ from langchain_community.llms.llamacpp import LlamaCpp
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
-from bot import llama_path, starling_path, mistral_path, wizard_path
+from qa_chain import llama_path, starling_path, mistral_path, wizard_path
 
 callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
 

@@ -3,7 +3,7 @@ import eventlet
 from flask_socketio import emit
 
 from app import socketio
-from bot.models import llama7b, starling7b, wizardlm13b
+from qa_chain.models import llama7b, starling7b, wizardlm13b
 
 llm = wizardlm13b(max_tokens=1024, temperature=1, top_p=1)
 stop_flag = False
