@@ -49,7 +49,7 @@ def get_text_vectorstore(paper_paths: List[Path] | Path, vdb_name: str | None = 
     if vdb_name is None:
         vdb_name = datetime.now().strftime('%y-%m-%d_%H-%M-%S')
 
-    with sqlite3.connect(str(Path(__file__).parent / 'vectorstores' / 'chroma.sqlite3')) as conn:
+    with sqlite3.connect(str(Path(__file__).parent.parent / 'vectorstores' / 'chroma.sqlite3')) as conn:
         cursor = conn.cursor()
         cursor.execute('SELECT name FROM collections')
         vdb_exists = vdb_name in [row[0] for row in cursor.fetchall()]
@@ -59,12 +59,13 @@ def get_text_vectorstore(paper_paths: List[Path] | Path, vdb_name: str | None = 
 
     else:
         vdb = Chroma.from_documents(
-            [reduce(
+            reduce(
                 lambda x, y: x + y, 
-                [Document(el) for el in get_pdf_chunks(paper_path)], 
-                []) 
-             for paper_path in paper_paths], 
+                [[Document(el) for el in get_pdf_chunks(paper_path)] for paper_path in paper_paths], 
+                []
+            ), 
             embedding=HuggingFaceEmbeddings())
+        vdb.persist()
 
     return vdb
 
