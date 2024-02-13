@@ -10,9 +10,8 @@ from langchain.docstore.document import Document
 from langchain_community.embeddings.huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough, RunnableSequence
 
-from load_dotenv import load_dotenv
 from unstructured.partition.auto import partition_pdf, PartitionStrategy
 
 from qa_chain.models import mistral7b
@@ -65,10 +64,43 @@ def get_text_vectorstore(paper_paths: List[Path] | Path, vdb_name: str | None = 
                     []
                 ), 
                 embedding=HuggingFaceEmbeddings(),
-                persist_directory=str(Path(__file__).parent.parent / 'vectorstores'))
+                persist_directory=str(Path(__file__).parent.parent / 'vectorstores'),
+                collection_name=vdb_name)
         vdb.persist()
 
     return vdb
+
+
+def get_simple_rag_chain(papers: List[Path], vdb_name: str | None = None) -> RunnableSequence:
+    return (
+        {
+            'context': (get_text_vectorstore(
+                            papers,
+                            vdb_name).as_retriever(search_kwargs={'k': 6})
+                        | (lambda doc_list: '\n\n'.join([doc.page_content for doc in doc_list]))
+                        ).with_config(
+                            {'metadata': {
+                                'vector_db_type': 'Chroma', 
+                                'sources': [paper.name for paper in papers],
+                                'embedding_model': HuggingFaceEmbeddings.__name__}}), 
+            'question': RunnablePassthrough()}
+        | PromptTemplate(
+                input_variables=(_in_vars := ['question', 'context']),
+                template=(_templ := (''
+                    '<s> [INST] You are an assistant for question-answering tasks. Use the following pieces of '
+                    'retrieved context to answer the question. If you don\'t know the answer, just say that you '
+                    'don\'t know. [/INST] </s> \n'
+                    '[INST] Question: {question} \n'
+                    'Context: {context} \n'
+                    'Answer: [/INST]'))
+            ).with_config({'metadata': {'input_variables': _in_vars, 'template': _templ}})
+        | (mistral7b(n_ctx=2048, max_tokens=None)).with_config(
+                {'metadata': {
+                    'n_ctx': 2048,
+                    'max_tokens': None
+                }})
+        | StrOutputParser()
+    )
 
 
 """
