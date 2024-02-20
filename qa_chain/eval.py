@@ -1,4 +1,11 @@
 
+from datetime import datetime
+from typing import Iterable
+
+from dominate.tags import div, style, script, br, strong
+from dominate.document import document
+from dominate.util import raw, text
+
 """
 - some sidenotes
     - the general questions will probably require that I generate extra text to get good answers
@@ -66,3 +73,162 @@ ai_eval_queries = [
     'What are the implications of the research for AI governance?',
     'How does the paper contribute to the ethical design and deployment of AI technologies?'
 ]
+
+
+class RAGRunDebugDisplay:
+
+    def attr_processing(name, value):
+        if isinstance(value, datetime):
+            return value.strftime("%y-%m-%d_%H-%M-%S-%f")
+        elif isinstance(value, dict):
+            return value
+        else:
+            return str(value)
+
+    def __init__(
+            self, 
+            runs: Iterable, 
+            tree_attrs: Iterable = ['id', 'name', 'start_time', 'end_time', 'inputs', 'outputs']
+    ) -> None:
+        """
+        Assumes trace structure:
+            RunnableSequence
+                RunnableParallel<context,question>
+                    RunnableSequence
+                        Retriever
+                        RunnableLambda
+                    RunnablePassthrough
+                LlamaCpp
+                PromptTemplate
+                StrOutputParser
+        """
+        
+        self.run_dict = {str(run.id): run for run in runs}
+        self.run_forest = []
+        self.tree_attrs = tree_attrs
+
+        num_parents = 0
+        runs_added = 0
+        while runs_added < len(self.run_dict):
+            for run in self.run_dict.values():
+                if len(run.parent_run_ids) == num_parents:
+                    if num_parents == 0:
+                        self.run_forest.append(
+                            {
+                                **({attr: self.attr_processing(getattr(run, attr)) for attr in tree_attrs}), 
+                                **({'sub_runs': []})
+                            }
+                        )
+                    else:
+                        tmp_lst = self.run_forest
+                        for parent_id in run.parent_run_ids:
+                            for _dct in tmp_lst:
+                                if _dct['id'] == str(parent_id):
+                                    tmp_lst = _dct['sub_runs']
+                                    break
+                        
+                        tmp_lst.append(
+                            {
+                                **({attr: self.attr_processing(getattr(run, attr)) for attr in tree_attrs}), 
+                                **({'sub_runs': []})
+                            }
+                        )
+
+                    runs_added += 1
+
+            num_parents += 1
+
+    def print(self):
+        def print_forest(forest, top_level=True, prefix=''):
+            for run in reversed(forest):
+                print(f'{prefix}{run["name"]: <34}: {run["start_time"]} -- {run["end_time"]}')
+                print_forest(run['sub_runs'], top_level=False, prefix=prefix + '  ')
+                if top_level:
+                    print()
+
+        print_forest(self.run_forest)
+
+    def get_text_from_tree(self, tree: dict):
+        assert tree['name'] == 'RunnableSequence', print(tree['name'], tree['id'])
+        assert len(tree['sub_runs']) > 2, print(tree['name'], len(tree['sub_runs']))  # make sure top-level
+
+        query_str = tree['inputs']['input']
+
+        for itm in tree['sub_runs']:
+            if itm['name'] == 'PromptTemplate':
+                prompt_str = itm['outputs']['kwargs']['text']
+
+            if itm['name'] == 'StrOutputParser':
+                response_str = itm['outputs']['output']
+
+        return query_str, prompt_str, response_str
+    
+
+    def generate_html(self):
+        """
+        Expecting query_prompt_response_tuples to be a list of 3-tuples
+        where each tuple is ({query}, {prompt}, {response})
+        """
+        doc = document(title='RAG Debug')
+
+        query_prompt_response_tuples = [] 
+        for tree in self.run_forest:
+            try:
+                query_prompt_response_tuples.append(self.get_text_from_tree(tree))
+            except AssertionError:
+                continue
+        
+        with doc.head:
+            # Add your styles and scripts here
+            style("""
+            .content {
+                display: none;
+                margin-top: 10px;
+            }
+            .question {
+                cursor: pointer;
+                color: blue;
+                margin-bottom: 5px;
+            }
+            """)
+        
+        with doc.body:
+            content_div = div(id="content")
+            for index, (query, prompt, response) in enumerate(query_prompt_response_tuples, start=1):
+                with content_div:
+                    div(query, _class='question')
+
+                    with div(_class='content'):
+                        strong('===== Prompt =====')
+                        br()
+                        [(text(itm), br()) for itm in prompt.split('\n')]
+
+                    with div(_class='content'):
+                        strong('===== Response =====')
+                        br()
+                        text(response)
+                        br()
+                        strong('====================')
+
+            script(
+                raw("""
+                function toggleVisibility(event) {
+                    let nextElement = event.target.nextElementSibling;
+                    nextElement.style.display = nextElement.style.display === 'block' ? 'none' : 'block';
+        
+                    let secondElement = nextElement.nextElementSibling;
+                    if (secondElement && secondElement.classList.contains('content')) {
+                        secondElement.style.display = secondElement.style.display === 'block' ? 'none' : 'block';
+                    }
+                }
+
+                document.addEventListener('DOMContentLoaded', function() {
+                    document.querySelectorAll('.question').forEach(function(question) {
+                        question.addEventListener('click', toggleVisibility);
+                    });
+                });
+                """)
+            )
+        
+        return str(doc)
+

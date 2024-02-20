@@ -14,6 +14,7 @@ from langchain_core.runnables import RunnablePassthrough, RunnableSequence
 
 from unstructured.partition.auto import partition_pdf, PartitionStrategy
 
+from qa_chain import vectorstore_dir
 from qa_chain.models import mistral7b
 
 
@@ -40,7 +41,6 @@ def get_pdf_chunks(paper_path: Path) -> List[str]:
 def get_text_vectorstore(paper_paths: List[Path] | Path, vdb_name: str | None = None) -> Chroma | None:
     """
     Get vectorstore from a sequence of text documents.
-    If the 
     """
     if isinstance(paper_paths, Path):
         paper_paths = [paper_paths]
@@ -48,13 +48,17 @@ def get_text_vectorstore(paper_paths: List[Path] | Path, vdb_name: str | None = 
     if vdb_name is None:
         vdb_name = datetime.now().strftime('%y-%m-%d_%H-%M-%S')
 
-    with sqlite3.connect(str(Path(__file__).parent.parent / 'vectorstores' / 'chroma.sqlite3')) as conn:
-        cursor = conn.cursor()
-        cursor.execute('SELECT name FROM collections')
-        vdb_exists = vdb_name in [row[0] for row in cursor.fetchall()]
+    chroma_sql_path = Path(__file__).parent.parent / 'vectorstores' / 'chroma.sqlite3'
+    if not chroma_sql_path.exists():
+        vdb_exists = False
+    else:
+        with sqlite3.connect(str(chroma_sql_path)) as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT name FROM collections')
+            vdb_exists = vdb_name in [row[0] for row in cursor.fetchall()]
 
     if vdb_exists:
-        vdb = Chroma(collection_name=vdb_name)
+        vdb = Chroma(collection_name=vdb_name, embedding_function=HuggingFaceEmbeddings())
 
     else:
         vdb = Chroma.from_documents(
@@ -64,7 +68,7 @@ def get_text_vectorstore(paper_paths: List[Path] | Path, vdb_name: str | None = 
                     []
                 ), 
                 embedding=HuggingFaceEmbeddings(),
-                persist_directory=str(Path(__file__).parent.parent / 'vectorstores'),
+                persist_directory=str(vectorstore_dir),
                 collection_name=vdb_name)
         vdb.persist()
 
@@ -72,33 +76,35 @@ def get_text_vectorstore(paper_paths: List[Path] | Path, vdb_name: str | None = 
 
 
 def get_simple_rag_chain(papers: List[Path], vdb_name: str | None = None) -> RunnableSequence:
+    retriever = (
+        get_text_vectorstore(papers, vdb_name).as_retriever(search_kwargs={'k': 6})
+        | (lambda doc_list: '\n\n'.join([doc.page_content for doc in doc_list]))
+    ).with_config({
+        'metadata': {
+                'vector_db_type': 'Chroma', 
+                'sources': [paper.name for paper in papers],
+                'embedding_model': HuggingFaceEmbeddings.__name__
+            }
+        }
+    )
+
+    prompt_templ = PromptTemplate(
+            input_variables=['question', 'context'],
+            template=''
+                '<s> [INST] You are an assistant for question-answering tasks. Use the following pieces of '
+                'retrieved context to answer the question. If you don\'t know the answer, just say that you '
+                'don\'t know. [/INST] </s> \n'
+                '[INST] Question: {question} \n'
+                'Context: {context} \n'
+                'Answer: [/INST]'
+    )
+
+    mistral = mistral7b(n_ctx=2048, max_tokens=None)
+
     return (
-        {
-            'context': (get_text_vectorstore(
-                            papers,
-                            vdb_name).as_retriever(search_kwargs={'k': 6})
-                        | (lambda doc_list: '\n\n'.join([doc.page_content for doc in doc_list]))
-                        ).with_config(
-                            {'metadata': {
-                                'vector_db_type': 'Chroma', 
-                                'sources': [paper.name for paper in papers],
-                                'embedding_model': HuggingFaceEmbeddings.__name__}}), 
-            'question': RunnablePassthrough()}
-        | PromptTemplate(
-                input_variables=(_in_vars := ['question', 'context']),
-                template=(_templ := (''
-                    '<s> [INST] You are an assistant for question-answering tasks. Use the following pieces of '
-                    'retrieved context to answer the question. If you don\'t know the answer, just say that you '
-                    'don\'t know. [/INST] </s> \n'
-                    '[INST] Question: {question} \n'
-                    'Context: {context} \n'
-                    'Answer: [/INST]'))
-            ).with_config({'metadata': {'input_variables': _in_vars, 'template': _templ}})
-        | (mistral7b(n_ctx=2048, max_tokens=None)).with_config(
-                {'metadata': {
-                    'n_ctx': 2048,
-                    'max_tokens': None
-                }})
+        {'context': retriever, 'question': RunnablePassthrough()}
+        | prompt_templ
+        | mistral
         | StrOutputParser()
     )
 
