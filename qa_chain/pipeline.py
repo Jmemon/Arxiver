@@ -14,6 +14,7 @@ from langchain_core.runnables import RunnablePassthrough, RunnableSequence
 
 from unstructured.partition.auto import partition_pdf, PartitionStrategy
 
+from utils import get_version
 from qa_chain import vectorstore_dir
 from qa_chain.models import mistral7b
 
@@ -80,11 +81,10 @@ def get_simple_rag_chain(papers: List[Path], vdb_name: str | None = None) -> Run
         get_text_vectorstore(papers, vdb_name).as_retriever(search_kwargs={'k': 6})
         | (lambda doc_list: '\n\n'.join([doc.page_content for doc in doc_list]))
     ).with_config({
-        'metadata': {
-                'vector_db_type': 'Chroma', 
-                'sources': [paper.name for paper in papers],
-                'embedding_model': HuggingFaceEmbeddings.__name__
-            }
+            'metadata': {
+                'sources': [paper.name for paper in papers]
+            },
+            'tags': ['Chroma', HuggingFaceEmbeddings.__name__]
         }
     )
 
@@ -92,8 +92,8 @@ def get_simple_rag_chain(papers: List[Path], vdb_name: str | None = None) -> Run
             input_variables=['question', 'context'],
             template=''
                 '<s> [INST] You are an assistant for question-answering tasks. Use the following pieces of '
-                'retrieved context to answer the question. If you don\'t know the answer, just say that you '
-                'don\'t know. [/INST] </s> \n'
+                'retrieved context to answer the question. If the context doesn\'t seem relevant to the question, '
+                'say that you don\'t know and that the question might not be relevant. [/INST] </s> \n'
                 '[INST] Question: {question} \n'
                 'Context: {context} \n'
                 'Answer: [/INST]'
@@ -106,7 +106,12 @@ def get_simple_rag_chain(papers: List[Path], vdb_name: str | None = None) -> Run
         | prompt_templ
         | mistral
         | StrOutputParser()
-    )
+    ).with_config({
+        'metadata': {
+            'version': get_version()
+        },
+        'tags': ['simple_rag_chain']
+    })
 
 
 """

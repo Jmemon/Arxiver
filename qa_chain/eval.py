@@ -1,20 +1,14 @@
 
 from datetime import datetime
+from pathlib import Path
 from typing import Iterable
 
+from langsmith import Client
 from dominate.tags import div, style, script, br, strong
 from dominate.document import document
 from dominate.util import raw, text
 
 """
-- some sidenotes
-    - the general questions will probably require that I generate extra text to get good answers
-    - some questions might get better context matches if we use the LM to check the vdb for 
-    multiple phrasings of the question
-
-- I'm going to gear this eval toward AI research papers for now. Going across all fields will make it 
-tough to have a general eval system. I'll move on to that later.
-
 - rag chain configuration:
     - chain graph
     - vdb type, embedding model, list of data sources; eg: Chroma, HuggingFaceEmbeddings(), ['mixtral_of_experts.pdf']
@@ -232,3 +226,17 @@ class RAGRunDebugDisplay:
         
         return str(doc)
 
+
+if __name__ == '__main__':
+    client = Client()
+    #runs = client.list_runs(project_name='paper_chat')
+    run_gen = client.list_runs(
+        project_name='paper_chat', 
+        filter='gt(start_time, "2024-02-14T00:00:00Z")'
+    )
+    
+    debug = RAGRunDebugDisplay(run_gen)
+    html_str = debug.generate_html()
+
+    with open(str(Path(__file__).parent / 'tmp.html'), 'w') as f:
+        f.write(html_str)
