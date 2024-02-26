@@ -3,9 +3,9 @@ import eventlet
 from flask_socketio import emit
 
 from app import socketio
-from qa_chain.models import llama7b, starling7b, wizardlm13b
+from qa_chain.models import mistral7b
 
-llm = wizardlm13b(max_tokens=1024, temperature=1, top_p=1)
+llm = mistral7b(max_tokens=1024, temperature=1, top_p=1)
 stop_flag = False
 
 
