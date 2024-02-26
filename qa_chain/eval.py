@@ -156,7 +156,6 @@ class RAGRunDebugDisplay:
                 response_str = itm['outputs']['output']
 
         return query_str, prompt_str, response_str
-    
 
     def generate_html(self):
         """
@@ -206,21 +205,21 @@ class RAGRunDebugDisplay:
 
             script(
                 raw("""
-                function toggleVisibility(event) {
-                    let nextElement = event.target.nextElementSibling;
-                    nextElement.style.display = nextElement.style.display === 'block' ? 'none' : 'block';
-        
-                    let secondElement = nextElement.nextElementSibling;
-                    if (secondElement && secondElement.classList.contains('content')) {
-                        secondElement.style.display = secondElement.style.display === 'block' ? 'none' : 'block';
+                    function toggleVisibility(event) {
+                        let nextElement = event.target.nextElementSibling;
+                        nextElement.style.display = nextElement.style.display === 'block' ? 'none' : 'block';
+            
+                        let secondElement = nextElement.nextElementSibling;
+                        if (secondElement && secondElement.classList.contains('content')) {
+                            secondElement.style.display = secondElement.style.display === 'block' ? 'none' : 'block';
+                        }
                     }
-                }
 
-                document.addEventListener('DOMContentLoaded', function() {
-                    document.querySelectorAll('.question').forEach(function(question) {
-                        question.addEventListener('click', toggleVisibility);
+                    document.addEventListener('DOMContentLoaded', function() {
+                        document.querySelectorAll('.question').forEach(function(question) {
+                            question.addEventListener('click', toggleVisibility);
+                        });
                     });
-                });
                 """)
             )
         

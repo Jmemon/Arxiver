@@ -59,7 +59,10 @@ def get_text_vectorstore(paper_paths: List[Path] | Path, vdb_name: str | None = 
             vdb_exists = vdb_name in [row[0] for row in cursor.fetchall()]
 
     if vdb_exists:
-        vdb = Chroma(collection_name=vdb_name, embedding_function=HuggingFaceEmbeddings())
+        vdb = Chroma(
+            collection_name=vdb_name, 
+            embedding_function=HuggingFaceEmbeddings(),
+            persist_directory=str(vectorstore_dir))
 
     else:
         vdb = Chroma.from_documents(
