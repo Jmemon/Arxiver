@@ -1,7 +1,8 @@
 
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Callable
 
 from langsmith import Client
 from dominate.tags import div, style, script, br, strong
@@ -115,13 +116,13 @@ class RAGRunDebugDisplay:
                         )
                     else:
                         tmp_lst = self.run_forest
-                        for parent_id in run.parent_run_ids:
+                        for parent_id in run.parent_run_ids:  # Get to the run's parent dict. Highest level parent to most immediate parent
                             for _dct in tmp_lst:
                                 if _dct['id'] == str(parent_id):
                                     tmp_lst = _dct['sub_runs']
                                     break
-                        
-                        tmp_lst.append(
+                        tmp_lst.insert(
+                            0, 
                             {
                                 **({attr: self.attr_processing(getattr(run, attr)) for attr in tree_attrs}), 
                                 **({'sub_runs': []})
@@ -134,7 +135,7 @@ class RAGRunDebugDisplay:
 
     def print(self):
         def print_forest(forest, top_level=True, prefix=''):
-            for run in reversed(forest):
+            for run in forest:
                 print(f'{prefix}{run["name"]: <34}: {run["start_time"]} -- {run["end_time"]}')
                 print_forest(run['sub_runs'], top_level=False, prefix=prefix + '  ')
                 if top_level:
@@ -155,7 +156,35 @@ class RAGRunDebugDisplay:
             if itm['name'] == 'StrOutputParser':
                 response_str = itm['outputs']['output']
 
+        if 'query_str' not in locals():
+            raise ValueError('query_str not set')
+    
+        if 'prompt_str' not in locals():
+            raise ValueError('prompt_str not set')
+
+        if 'response_str' not in locals():
+            raise ValueError('response_str not set')
+
         return query_str, prompt_str, response_str
+    
+    def traverse_tree(self, tree: dict, node_fxn: Callable):
+        """
+        
+        """
+        node_outs = []
+        node_stack = [tree]
+
+        while len(node_stack) > 0:
+            node = node_stack.pop()
+            node_outs.append(node_fxn(node))
+            node_stack.extend(list(reversed(node['sub_runs'])))  # pop the children in the order they appear in the list
+
+        return node_outs
+    
+    def tree_check(self, tree, structure):
+        tree_nodes = self.traverse_tree(tree, lambda nd: nd['name'])
+        structure_nodes = self.traverse_tree(structure, lambda nd: nd['name'])
+        return all([tree_name == struct_name for tree_name, struct_name in zip(tree_nodes, structure_nodes)])
 
     def generate_html(self):
         """
@@ -169,6 +198,8 @@ class RAGRunDebugDisplay:
             try:
                 query_prompt_response_tuples.append(self.get_text_from_tree(tree))
             except AssertionError:
+                continue
+            except ValueError:
                 continue
         
         with doc.head:
