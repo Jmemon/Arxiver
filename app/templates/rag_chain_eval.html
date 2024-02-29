@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Graph Visualization</title>
+    <style>
+        /* Sidebar styling */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            background-color: #f6f2f2;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.5);
+            visibility: hidden; /* Initially hidden */
+        }
+        /* Graph styling */
+        #graph {
+            width: 100%;
+            height: 100vh;
+            background-color: #f6f2f2;
+        }
+    </style>
+</head>
+<body>
+<div id="graph"></div>
+<div class="sidebar" id="sidebar">
+    <!-- Node ID will be displayed here -->
+</div>
+<script src="https://d3js.org/d3.v5.min.js"></script>
+<script>
+    // Fetch the graph data from the server
+    fetch('/graph')
+        .then(response => response.json())
+        .then(data => {
+            renderGraph(data.nodes, data.edges);
+        });
+
+    function renderGraph(nodes, edges) {
+        const winWidth = window.innerWidth;
+        const winHeight = window.innerHeight;
+
+        const svg = d3.select('#graph').append('svg')
+            .attr('width', winWidth)
+            .attr('height', winHeight);
+
+        // Static x-axis positioning and dynamic y-axis positioning
+        const nodeSpacing = winWidth / (nodes.length + 1);
+        nodes.forEach((node, index) => {
+            node.fx = (index + 1) * nodeSpacing; // Fix nodes along the x-axis
+        });
+
+        // Initialize force simulation
+        const simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(edges).id(d => d.id).distance(100))
+            .force("charge", d3.forceManyBody().strength(-400))
+            .force("y", d3.forceY(winHeight / 2).strength(0.5)) // Attract nodes to the center of the y-axis
+            .on("tick", ticked);
+
+        // Draw lines for edges
+        const link = svg.selectAll(".link")
+            .data(edges)
+            .enter().append("line")
+            .attr("class", "link")
+            .attr("stroke-width", 2)
+            .attr("stroke", "#999");
+
+        // Draw nodes
+        const node = svg.selectAll(".node")
+            .data(nodes)
+            .enter().append("circle")
+            .attr("class", "node")
+            .attr("r", 20)
+            .attr("fill", getNodeColor)
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended))
+            .on("click", d => toggleSidebar(d.id));
+
+        // Node and link position updates
+        function ticked() {
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            node
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y);
+        }
+
+        // Drag event handlers
+        function dragstarted(d) {
+            if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(d) {
+            d.fx = d3.event.x;
+            d.fy = d3.event.y;
+        }
+
+        function dragended(d) {
+            if (!d3.event.active) simulation.alphaTarget(0);
+            d.fx = d.x; // Fix nodes position along the x-axis after drag
+            d.fy = null; // Allow y position to be affected by force simulation
+        }
+
+        function getNodeColor(node) {
+            return stringToColor(
+                (function() {
+                    if (node.type === 'schema') {
+                        return node.data.title
+                    } else if (node.type === 'runnable') {
+                        return node.data.name
+                    }
+                })()
+            )
+        }
+
+        // Function to convert string to color (simplified version for demonstration)
+        function stringToColor(nodeName) {
+            if (nodeName.includes('RunnableParallel')) {
+                nodeName = 'RunnableParallel'
+            } else if (nodeName.includes('StrOutputParser')) {
+                nodeName = 'StrOutputParser'
+            }
+            return ({
+                RunnableSequence: "#6771b0",
+                RunnableParallel: "#55c430",
+                VectorStoreRetriever: "#808080",
+                RunnableLambda: "#dd3322",
+                RunnablePassthrough: "#515151",
+                PromptTemplate: "#b0b0b0",
+                LlamaCpp: "#a414eb",
+                StrOutputParser: "#c3c3c3",
+            })[nodeName]
+        }
+    }
+
+    function toggleSidebar(node) {
+        var sidebar = document.getElementById('sidebar');
+        var text = (
+            function() {
+                if (node.type === 'runnable') {
+                    return `${node.id}` + '\n' + `${node.data.name}`
+                } else if (node.type == 'schema') {
+                    return `${node.id}` + '\n' + `${node.data.title}`
+                } else {
+                    return `${node.id}`
+                }
+            }
+        )();
+        if (sidebar.style.visibility === 'hidden' || sidebar.innerHTML !== text) {
+            sidebar.style.visibility = 'visible';
+            sidebar.innerHTML = text;
+        } else {
+            sidebar.style.visibility = 'hidden';
+        }
+    }
+
+    // Close the sidebar if blank space is clicked
+    document.getElementById('graph').addEventListener('click', function(e) {
+        // e.target.tagName
+        if (e.target.tagName !== 'circle' && document.getElementById('sidebar').visibility === 'visible') {
+            toggleSidebar('')
+        }
+    });
+</script>
+</body>
+</html>

@@ -7,7 +7,7 @@ from typing import List
 
 from langchain.prompts import PromptTemplate
 from langchain.docstore.document import Document
-from langchain_community.embeddings.huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings.huggingface import HuggingFaceBgeEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableSequence
@@ -61,7 +61,7 @@ def get_text_vectorstore(paper_paths: List[Path] | Path, vdb_name: str | None = 
     if vdb_exists:
         vdb = Chroma(
             collection_name=vdb_name, 
-            embedding_function=HuggingFaceEmbeddings(),
+            embedding_function=HuggingFaceBgeEmbeddings(),
             persist_directory=str(vectorstore_dir))
 
     else:
@@ -71,7 +71,7 @@ def get_text_vectorstore(paper_paths: List[Path] | Path, vdb_name: str | None = 
                     [[Document(el) for el in get_pdf_chunks(paper_path)] for paper_path in paper_paths], 
                     []
                 ), 
-                embedding=HuggingFaceEmbeddings(),
+                embedding=HuggingFaceBgeEmbeddings(),
                 persist_directory=str(vectorstore_dir),
                 collection_name=vdb_name)
         vdb.persist()
@@ -87,7 +87,7 @@ def get_simple_rag_chain(papers: List[Path], vdb_name: str | None = None) -> Run
             'metadata': {
                 'sources': [paper.name for paper in papers]
             },
-            'tags': ['Chroma', HuggingFaceEmbeddings.__name__]
+            'tags': ['Chroma', HuggingFaceBgeEmbeddings.__name__]
         }
     )
 
