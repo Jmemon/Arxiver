@@ -40,22 +40,64 @@
         const winWidth = window.innerWidth;
         const winHeight = window.innerHeight;
 
+        // Static x-axis positioning and dynamic y-axis positioning
+        const nodeSpacing = winWidth / (nodes.length + 1);
+        const node_radius = 20;
+
+        var base_x = 0;
+        var unproc = Array.from(nodes); // create new array with references to all same objects
+        var proc = [];
+        var curr_node = nodes.find(nd => edges.filter(e => e.target === nd.id).length === 0);
+
+        // This will break for nested RunnableParallels
+        while (unproc.length > 0) {
+            var outgoing_edges = edges.filter(e => e.source === curr_node.id);
+            curr_node.x = (base_x += nodeSpacing);
+            curr_node.y = winHeight / 2;
+            unproc.splice(unproc.indexOf(curr_node), 1);
+            proc.push(curr_node);
+
+            if (outgoing_edges.length === 1) {
+                curr_node = nodes.find(nd => nd.id === outgoing_edges[0].target)
+            } else if (outgoing_edges.length > 1) {
+                // get parallel tracks -- they end with the last node before the RunnableParallel<...>Output node
+                var parallel_tracks = outgoing_edges.map(e => [nodes.find(nd => nd.id === e.target)]);
+                for (track of parallel_tracks) {
+                    while ((edges.filter(e => {
+                            return e.target === (
+                                next_node = nodes.find(nd => {
+                                    return nd.id === edges.filter(e => e.source === track[track.length - 1].id)[0].target;
+                                })
+                            ).id;
+                        })
+                    ).length <= 1) {
+                        track.push(next_node);
+                    }
+                }
+                
+                // Set fx and fy, remove from unproc, add to proc
+                var rp_dist = Math.max(...parallel_tracks.map(tr => tr.length)) * (4.5 * node_radius);  // 2.5 radii between and 1 radius on either end of intervals
+                var delta_y = winHeight / (parallel_tracks.length + 1);
+                parallel_tracks.forEach(function (track, i) {
+                    var delta_x = rp_dist / (track.length + 1);
+                    track.forEach(function (rp_curr_node, j) {
+                        rp_curr_node.x = base_x + (j + 1) * delta_x;
+                        rp_curr_node.y = (i + 1) * delta_y;
+                        unproc.splice(unproc.indexOf(rp_curr_node), 1);
+                        proc.push(rp_curr_node);
+                    })
+                })
+                base_x += rp_dist - nodeSpacing
+                curr_node = next_node
+            }
+        }
+
         const svg = d3.select('#graph').append('svg')
             .attr('width', winWidth)
             .attr('height', winHeight);
 
-        // Static x-axis positioning and dynamic y-axis positioning
-        const nodeSpacing = winWidth / (nodes.length + 1);
-        nodes.forEach((node, index) => {
-            node.fx = (index + 1) * nodeSpacing; // Fix nodes along the x-axis
-        });
-
         // Initialize force simulation
-        const simulation = d3.forceSimulation(nodes)
-            .force("link", d3.forceLink(edges).id(d => d.id).distance(100))
-            .force("charge", d3.forceManyBody().strength(-400))
-            .force("y", d3.forceY(winHeight / 2).strength(0.5)) // Attract nodes to the center of the y-axis
-            .on("tick", ticked);
+        const simulation = d3.forceSimulation(nodes).on("tick", ticked);
 
         // Draw lines for edges
         const link = svg.selectAll(".link")
@@ -70,13 +112,13 @@
             .data(nodes)
             .enter().append("circle")
             .attr("class", "node")
-            .attr("r", 20)
+            .attr("r", node_radius)
             .attr("fill", getNodeColor)
             .call(d3.drag()
                 .on("start", dragstarted)
                 .on("drag", dragged)
                 .on("end", dragended))
-            .on("click", d => toggleSidebar(d.id));
+            .on("click", d => toggleSidebar(d));
 
         // Node and link position updates
         function ticked() {
@@ -130,43 +172,41 @@
             }
             return ({
                 RunnableSequence: "#6771b0",
-                RunnableParallel: "#55c430",
+                RunnableParallel: "#a414eb",
                 VectorStoreRetriever: "#808080",
-                RunnableLambda: "#dd3322",
-                RunnablePassthrough: "#515151",
+                RunnableLambda: "#1d0ef1",
+                RunnablePassthrough: "#c3c3c3",
                 PromptTemplate: "#b0b0b0",
-                LlamaCpp: "#a414eb",
-                StrOutputParser: "#c3c3c3",
+                LlamaCpp: "#55c430",
+                StrOutputParser: "#515151",
             })[nodeName]
         }
     }
 
     function toggleSidebar(node) {
         var sidebar = document.getElementById('sidebar');
-        var text = (
-            function() {
-                if (node.type === 'runnable') {
-                    return `${node.id}` + '\n' + `${node.data.name}`
-                } else if (node.type == 'schema') {
-                    return `${node.id}` + '\n' + `${node.data.title}`
-                } else {
-                    return `${node.id}`
-                }
-            }
-        )();
-        if (sidebar.style.visibility === 'hidden' || sidebar.innerHTML !== text) {
-            sidebar.style.visibility = 'visible';
-            sidebar.innerHTML = text;
-        } else {
+        if (!node) {  // clicked on something that isn't a node
             sidebar.style.visibility = 'hidden';
+        } else { // clicked on a node
+            sidebar.style.visibility = 'visible';
+            sidebar.innerHTML = (
+                function() {
+                    if (node.type === 'runnable') {
+                        return `${node.id}` + '<br>' + `${node.data.name}`;
+                    } else if (node.type == 'schema') {
+                        return `${node.id}` + '<br>' + `${node.data.title}`;
+                    } else {
+                        return `${node.id}`;
+                    }
+                }
+            )();
         }
     }
 
     // Close the sidebar if blank space is clicked
     document.getElementById('graph').addEventListener('click', function(e) {
-        // e.target.tagName
-        if (e.target.tagName !== 'circle' && document.getElementById('sidebar').visibility === 'visible') {
-            toggleSidebar('')
+        if (e.target.tagName !== 'circle' && document.getElementById('sidebar').style.visibility === 'visible') {
+            toggleSidebar()
         }
     });
 </script>
