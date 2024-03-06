@@ -14,19 +14,51 @@
             box-shadow: -2px 0 5px rgba(0,0,0,0.5);
             visibility: hidden; /* Initially hidden */
         }
+
+        #textArea {
+            float: left;
+            width: 500px;
+            height: 100%;
+            background-color: #f6f2f2;
+        }
+
+        #inputArea, #outputArea {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        #inputArea {
+            left: 10px;
+        }
+
+        #outputArea {
+            right: 10px;
+        }
+
         /* Graph styling */
         #graph {
-            width: 100%;
+            float: none;
+            overflow: hidden;
             height: 100vh;
             background-color: #f6f2f2;
         }
     </style>
 </head>
 <body>
-<div id="graph"></div>
-<div class="sidebar" id="sidebar">
-    <!-- Node ID will be displayed here -->
-</div>
+    <div id="textArea">
+        <div id="outputArea">
+            <span>Response text will be displayed here.</span>
+        </div>
+        <div id="inputArea">
+            <input type="text" id="inputText" placeholder="Enter text">
+            <button id="sendButton">Send</button>
+        </div>
+    </div>
+    <div id="graph"></div>
+    <div class="sidebar" id="sidebar">
+        <!-- Node ID will be displayed here -->
+    </div>
 <script src="https://d3js.org/d3.v5.min.js"></script>
 <script>
     // Fetch the graph data from the server
@@ -36,13 +68,14 @@
             renderGraph(data.nodes, data.edges);
         });
 
-    function renderGraph(nodes, edges) {
-        const winWidth = window.innerWidth;
-        const winHeight = window.innerHeight;
+    const NODE_RADIUS = 20;
+
+    function nodePositioning(nodes, edges) {
+        const graphDivWidth = document.getElementById('graph').clientWidth;
+        const graphDivHeight = document.getElementById('graph').clientHeight;
 
         // Static x-axis positioning and dynamic y-axis positioning
-        const nodeSpacing = winWidth / (nodes.length + 1);
-        const node_radius = 20;
+        const nodeSpacing = graphDivWidth / (nodes.length + 1);
 
         var base_x = 0;
         var unproc = Array.from(nodes); // create new array with references to all same objects
@@ -51,33 +84,32 @@
 
         // This will break for nested RunnableParallels
         while (unproc.length > 0) {
-            var outgoing_edges = edges.filter(e => e.source === curr_node.id);
             curr_node.x = (base_x += nodeSpacing);
-            curr_node.y = winHeight / 2;
+            curr_node.y = graphDivHeight / 2;
             unproc.splice(unproc.indexOf(curr_node), 1);
             proc.push(curr_node);
 
+            var outgoing_edges = edges.filter(e => e.source === curr_node.id)
             if (outgoing_edges.length === 1) {
                 curr_node = nodes.find(nd => nd.id === outgoing_edges[0].target)
             } else if (outgoing_edges.length > 1) {
                 // get parallel tracks -- they end with the last node before the RunnableParallel<...>Output node
                 var parallel_tracks = outgoing_edges.map(e => [nodes.find(nd => nd.id === e.target)]);
                 for (track of parallel_tracks) {
+                    // Ugly way of building tracks. Definitely a nicer way to do this.
                     while ((edges.filter(e => {
                             return e.target === (
                                 next_node = nodes.find(nd => {
                                     return nd.id === edges.filter(e => e.source === track[track.length - 1].id)[0].target;
-                                })
-                            ).id;
-                        })
-                    ).length <= 1) {
+                                })).id;
+                    })).length <= 1) {
                         track.push(next_node);
                     }
                 }
                 
                 // Set fx and fy, remove from unproc, add to proc
-                var rp_dist = Math.max(...parallel_tracks.map(tr => tr.length)) * (4.5 * node_radius);  // 2.5 radii between and 1 radius on either end of intervals
-                var delta_y = winHeight / (parallel_tracks.length + 1);
+                var rp_dist = Math.max(...parallel_tracks.map(tr => tr.length)) * (4.5 * NODE_RADIUS);  // 2.5 radii between and 1 radius on either end of intervals
+                var delta_y = graphDivHeight / (parallel_tracks.length + 1);
                 parallel_tracks.forEach(function (track, i) {
                     var delta_x = rp_dist / (track.length + 1);
                     track.forEach(function (rp_curr_node, j) {
@@ -87,17 +119,28 @@
                         proc.push(rp_curr_node);
                     })
                 })
-                base_x += rp_dist - nodeSpacing
-                curr_node = next_node
+                base_x += rp_dist - nodeSpacing;
+                curr_node = next_node;
             }
         }
 
-        const svg = d3.select('#graph').append('svg')
-            .attr('width', winWidth)
-            .attr('height', winHeight);
+        // Final adjustment. Get min/max x/y coords across all nodes, then add some values so graph is centered
+        // prob not most efficient way, could probably be corrected as I go in loops, but for now easier for me to
+        // think about.
+        deltax = ((graphDivWidth - Math.max(...(xs = nodes.map(nd => nd.x)))) - Math.min(...xs)) / 2;
+        deltay = ((graphDivHeight - Math.max(...(ys = nodes.map(nd => nd.y)))) - Math.min(...ys)) / 2;
+        nodes.forEach(function (nd, i) {
+            nd.x += deltax;
+            nd.y += deltay;
+        })
+    }
 
-        // Initialize force simulation
-        const simulation = d3.forceSimulation(nodes).on("tick", ticked);
+    function renderGraph(nodes, edges) {
+        nodePositioning(nodes, edges)
+
+        const svg = d3.select('#graph').append('svg')
+            .attr('width', document.getElementById('graph').clientWidth)
+            .attr('height', document.getElementById('graph').clientHeight);
 
         // Draw lines for edges
         const link = svg.selectAll(".link")
@@ -112,7 +155,7 @@
             .data(nodes)
             .enter().append("circle")
             .attr("class", "node")
-            .attr("r", node_radius)
+            .attr("r", NODE_RADIUS)
             .attr("fill", getNodeColor)
             .call(d3.drag()
                 .on("start", dragstarted)
@@ -120,13 +163,18 @@
                 .on("end", dragended))
             .on("click", d => toggleSidebar(d));
 
+        // somehow find the min/max node elements from here, use .getBoundingClientRect(), then set inputArea/outputArea 
+
+        // Initialize force simulation
+        const simulation = d3.forceSimulation(nodes).on("tick", ticked);
+
         // Node and link position updates
         function ticked() {
             link
-                .attr("x1", d => d.source.x)
-                .attr("y1", d => d.source.y)
-                .attr("x2", d => d.target.x)
-                .attr("y2", d => d.target.y);
+                .attr("x1", d => nodes.find(nd => nd.id === d.source).x)
+                .attr("y1", d => nodes.find(nd => nd.id === d.source).y)
+                .attr("x2", d => nodes.find(nd => nd.id === d.target).x)
+                .attr("y2", d => nodes.find(nd => nd.id === d.target).y);
 
             node
                 .attr("cx", d => d.x)
@@ -209,6 +257,24 @@
             toggleSidebar()
         }
     });
+
+    document.getElementById('sendButton').addEventListener('click', function(e) {
+        const inputText = document.getElementById('inputText').value;
+        // Send inputText to the server via AJAX or a similar method
+        // Example using the Fetch API
+        fetch('/send-text', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text: inputText }),
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Handle response
+            console.log(data);
+        });
+    })
 </script>
 </body>
 </html>
