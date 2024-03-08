@@ -3,61 +3,86 @@
 <head>
     <title>Graph Visualization</title>
     <style>
-        /* Sidebar styling */
-        .sidebar {
-            position: fixed;
-            top: 0;
-            right: 0;
-            width: 300px;
-            height: 100%;
-            background-color: #f6f2f2;
-            box-shadow: -2px 0 5px rgba(0,0,0,0.5);
-            visibility: hidden; /* Initially hidden */
+        #pipelineViz {
+            height: 100vh;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
         }
 
         #textArea {
-            float: left;
-            width: 500px;
             height: 100%;
-            background-color: #f6f2f2;
-        }
+            background-color: #6a9867;
+            flex: 0 1 350px;
 
-        #inputArea, #outputArea {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column-reverse;
+            justify-content: flex-start;
         }
 
         #inputArea {
-            left: 10px;
+            width: 100%;
+            flex: 0 1 40px;
+            border: medium solid black;
+
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+        }
+
+        #inputText {
+            flex: 1 1 auto;
         }
 
         #outputArea {
-            right: 10px;
+            width: 100%;
+            flex: 1 1 content;
+            border: medium solid black;
+
+            display: flex;
+            flex-direction: column-reverse;
+            justify-content: flex-start;
         }
 
-        /* Graph styling */
+        #outputArea.span {
+            flex: 0 1 content;
+        }
+
+        #graphAndNodeData {
+            height: 100%;
+            background-color: #e6e4dc;
+            flex: 1 1 auto;
+
+            display: flex;
+            flex-direction: column;
+        }
+
         #graph {
-            float: none;
-            overflow: hidden;
-            height: 100vh;
-            background-color: #f6f2f2;
+            flex: 0 1 66%;
+            border: medium solid black;
+        }
+
+        #nodeData {
+            flex: 1 1 auto;
+            border: medium solid black;
         }
     </style>
 </head>
 <body>
-    <div id="textArea">
-        <div id="outputArea">
-            <span>Response text will be displayed here.</span>
+    <div id="pipelineViz">
+        <div id="textArea">
+            <div id="inputArea">
+                <input type="text" id="inputText" placeholder="Enter text">
+                <button id="sendButton">Send</button>
+            </div>
+            <div id="outputArea">
+                <span id="outputText"></span>
+            </div>
         </div>
-        <div id="inputArea">
-            <input type="text" id="inputText" placeholder="Enter text">
-            <button id="sendButton">Send</button>
+        <div id="graphAndNodeData">
+            <div id="graph"></div>
+            <div id="nodeData"></div>
         </div>
-    </div>
-    <div id="graph"></div>
-    <div class="sidebar" id="sidebar">
-        <!-- Node ID will be displayed here -->
     </div>
 <script src="https://d3js.org/d3.v5.min.js"></script>
 <script>
@@ -161,7 +186,7 @@
                 .on("start", dragstarted)
                 .on("drag", dragged)
                 .on("end", dragended))
-            .on("click", d => toggleSidebar(d));
+            .on("click", d => nodeDataDisplay(d));
 
         // somehow find the min/max node elements from here, use .getBoundingClientRect(), then set inputArea/outputArea 
 
@@ -231,30 +256,23 @@
         }
     }
 
-    function toggleSidebar(node) {
-        var sidebar = document.getElementById('sidebar');
-        if (!node) {  // clicked on something that isn't a node
-            sidebar.style.visibility = 'hidden';
-        } else { // clicked on a node
-            sidebar.style.visibility = 'visible';
-            sidebar.innerHTML = (
-                function() {
-                    if (node.type === 'runnable') {
-                        return `${node.id}` + '<br>' + `${node.data.name}`;
-                    } else if (node.type == 'schema') {
-                        return `${node.id}` + '<br>' + `${node.data.title}`;
-                    } else {
-                        return `${node.id}`;
-                    }
+    function nodeDataDisplay(node) {
+        document.getElementById('nodeData').innerHTML = (
+            function() {
+                if (node.type === 'runnable') {
+                    return `${node.id}` + '<br>' + `${node.data.name}`;
+                } else if (node.type == 'schema') {
+                    return `${node.id}` + '<br>' + `${node.data.title}`;
+                } else {
+                    return `${node.id}`;
                 }
-            )();
-        }
+            }
+        )();
     }
 
-    // Close the sidebar if blank space is clicked
     document.getElementById('graph').addEventListener('click', function(e) {
-        if (e.target.tagName !== 'circle' && document.getElementById('sidebar').style.visibility === 'visible') {
-            toggleSidebar()
+        if (e.target.tagName !== 'circle') {
+            document.getElementById('nodeData').innerHTML= '';
         }
     });
 
