@@ -1,6 +1,6 @@
-Ultimately aiming to be able to give an LLM some information about a research area I'm interested in, have it then search arxiv for
-relevant papers, download them, and allow us to ask questions about the topics, write summaries, find connections, find new research directions, and hopefully more.
 
+Ultimately aiming to be a research tool that can spin up chatbots with strong knowledge of some active research area specified by the user.
+Each chatbot should be able to be run locally.
 
 #### Version X.Y.Z
 
