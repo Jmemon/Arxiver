@@ -79,7 +79,10 @@ def get_text_vectorstore(paper_paths: List[Path] | Path, vdb_name: str | None = 
     return vdb
 
 
-def get_simple_rag_chain(papers: List[Path], vdb_name: str | None = None) -> RunnableSequence:
+def get_simple_rag_chain(papers: List[Path], vdb_name: str | None = None, callbacks: List | None = None) -> RunnableSequence:
+    if callbacks is None:
+        callbacks = []
+    
     retriever = (
         get_text_vectorstore(papers, vdb_name).as_retriever(search_kwargs={'k': 6})
         | (lambda doc_list: '\n\n'.join([doc.page_content for doc in doc_list]))
@@ -87,7 +90,8 @@ def get_simple_rag_chain(papers: List[Path], vdb_name: str | None = None) -> Run
             'metadata': {
                 'sources': [paper.name for paper in papers]
             },
-            'tags': ['Chroma', HuggingFaceBgeEmbeddings.__name__]
+            'tags': ['Chroma', HuggingFaceBgeEmbeddings.__name__],
+            'handlers': callbacks
         }
     )
 
@@ -100,15 +104,15 @@ def get_simple_rag_chain(papers: List[Path], vdb_name: str | None = None) -> Run
                 '[INST] Question: {question} \n'
                 'Context: {context} \n'
                 'Answer: [/INST]'
-    )
+    ).with_config({'handlers': callbacks})
 
-    mistral = mistral7b(n_ctx=2048, max_tokens=None)
+    mistral = mistral7b(n_ctx=3072, max_tokens=None).with_config({'handlers': callbacks})
 
     return (
         {'context': retriever, 'question': RunnablePassthrough()}
         | prompt_templ
         | mistral
-        | StrOutputParser()
+        | StrOutputParser().with_config({'handlers': callbacks})
     ).with_config({
         'metadata': {
             'version': get_version()

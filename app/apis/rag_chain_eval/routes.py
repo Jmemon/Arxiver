@@ -1,7 +1,7 @@
 
 from flask import render_template, jsonify
 
-from . import rag_chain_eval_blueprint
+from . import rag_chain_eval_blueprint, pipeline
 from utils import ARXIVER_PATH
 
 
@@ -14,7 +14,4 @@ def rag_chain_eval():
 def graph():
     from qa_chain.pipeline import get_simple_rag_chain
 
-    return jsonify(get_simple_rag_chain(
-                        [ARXIVER_PATH / 'papers' / 'llm_apps' / 'mixtral_of_experts.pdf'], 
-                        'mixtral_of_experts'
-                    ).get_graph().to_json())
+    return jsonify(pipeline.get_graph().to_json())

@@ -73,7 +73,7 @@
         <div id="textArea">
             <div id="inputArea">
                 <input type="text" id="inputText" placeholder="Enter text">
-                <button id="sendButton">Send</button>
+                <button id="sendButton" onclick="sendPrompt()">Send</button>
             </div>
             <div id="outputArea">
                 <span id="outputText"></span>
@@ -85,7 +85,10 @@
         </div>
     </div>
 <script src="https://d3js.org/d3.v5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
 <script>
+    var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + '/rag_chain_eval');
+
     // Fetch the graph data from the server
     fetch('/graph')
         .then(response => response.json())
@@ -270,29 +273,26 @@
         )();
     }
 
+    function sendPrompt() {
+        var prompt = document.getElementById('inputText').value;
+        socket.emit('message', { prompt: prompt });
+        document.getElementById('outputText').innerHTML = '';
+    }
+
+    socket.on('response', function(data) {
+        document.getElementById('outputText').innerHTML += data.data;
+        console.log(data.data)
+    });
+
+    socket.on('intermediate_chain_values', function(intermediate_values) {
+        console.log(intermediate_values)
+    });
+
     document.getElementById('graph').addEventListener('click', function(e) {
         if (e.target.tagName !== 'circle') {
             document.getElementById('nodeData').innerHTML= '';
         }
     });
-
-    document.getElementById('sendButton').addEventListener('click', function(e) {
-        const inputText = document.getElementById('inputText').value;
-        // Send inputText to the server via AJAX or a similar method
-        // Example using the Fetch API
-        fetch('/send-text', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ text: inputText }),
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Handle response
-            console.log(data);
-        });
-    })
 </script>
 </body>
 </html>
