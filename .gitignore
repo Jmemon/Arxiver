@@ -8,7 +8,6 @@ Arxiver.code-workspace
 
 qa_chain/weights/*
 test.py
-papers/*
 logs/*
 vectorstores/*
 tmp/*
