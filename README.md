@@ -9,8 +9,9 @@ Currently we use a naive RAG architecture consisting of HuggingFaceEmbeddings, C
 
 Using python version 3.10.8.
 
-Run
+To run the app:
 ```
-huggingface-cli download TheBloke/Mistral-7B-Instruct-v0.2-GGUF mistral-7b-instruct-v0.2.Q4_K_M.gguf --local-dir qa_chain/weights
+docker build -t arxiver-chat-app .
+docker run -p 5000:5000 arxiver-chat-app
 ```
-from the project root dir to download the proper model weights.
+Then navigate to `http://<host-ip>:5000/<endpoint>`
