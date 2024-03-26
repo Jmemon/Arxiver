@@ -11,7 +11,7 @@ Using python version 3.10.8.
 
 To run the app:
 ```
-docker build -t arxiver-chat-app .
+docker build -t arxiver-app .
 docker run -p 5000:5000 arxiver-chat-app
 ```
 Then navigate to `http://<host-ip>:5000/<endpoint>`
