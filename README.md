@@ -11,7 +11,9 @@ Using python version 3.10.8.
 
 To run the app:
 ```
+git clone https://github.com/Jmemon/Arxiver.git
+cd Arxiver
 docker build -t arxiver-app .
-docker run -p 5000:5000 arxiver-chat-app
+docker run -p 5000:5000 arxiver-app
 ```
 Then navigate to `http://<host-ip>:5000/<endpoint>`
