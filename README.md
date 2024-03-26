@@ -1,11 +1,17 @@
-Ultimately aiming to be able to give an LLM some information about a research area I'm interested in, have it then search arxiv for
-relevant papers, download them, and allow us to ask questions about the topics, write summaries, find connections, find new research directions, and hopefully more.
 
+Aiming to be a research tool that can spin up chatbots with strong knowledge of some user-specified research area. After some direction from the user, the tool will download a set of papers (currently from arxiv), index them, and run queries through a RAG pipeline.
 
-#### Version X.Y.Z
+Chatbots ideally will be runnable locally, although the pipeline is getting more resource-intensive. Currently experimenting with running it on the cloud. Hopefully down the line this can be changed.
 
-Increment Z for minor changes in Arxiver -- Parameter changes. Eg tweak prompt template, more/less context items retrieved.
+Currently we use a naive RAG architecture consisting of HuggingFaceEmbeddings, ChromaDB, and Mistral7B, although we are currently improving on this architecture drawing inspiration from:
+- [WalkingRAG](https://twitter.com/hrishioa/status/1745835962108985737)
+- [RAPTOR](https://github.com/parthsarthi03/raptor)
 
-Increment Y for changes in architecture. Eg Single-query retrieval -> Multi-query retrieval, Incorporate text generation, Change vector DB.
+Using python version 3.10.8.
 
-Increment X for substantial change in arch or important step in capability. Eg reliably communicate with a single pdf, reliably communicate with multiple pdfs, Chatbot -> Agent, etc.
+To run the app:
+```
+docker build -t arxiver-app .
+docker run -p 5000:5000 arxiver-chat-app
+```
+Then navigate to `http://<host-ip>:5000/<endpoint>`
