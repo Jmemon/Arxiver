@@ -14,6 +14,6 @@ To run the app:
 git clone https://github.com/Jmemon/Arxiver.git
 cd Arxiver
 docker build -t arxiver-app .
-docker run -p 5000:5000 arxiver-app
+docker run -p <host-port>:5000 arxiver-app
 ```
-Then navigate to `http://<host-ip>:5000/<endpoint>`
+Then navigate to `http://localhost:<host-port>/<endpoint>`
