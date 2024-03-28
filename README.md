@@ -1,4 +1,6 @@
 
+Note: Full pipeline is on branch EvalTool. main is only a test app.
+
 Aiming to be a research tool that can spin up chatbots with strong knowledge of some user-specified research area. After some direction from the user, the tool will download a set of papers (currently from arxiv), index them, and run queries through a RAG pipeline.
 
 Chatbots ideally will be runnable locally, although the pipeline is getting more resource-intensive. Currently experimenting with running it on the cloud. Hopefully down the line this can be changed.
