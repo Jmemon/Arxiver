@@ -17,3 +17,6 @@ docker build -t arxiver-app .
 docker run -p <host-port>:5000 arxiver-app
 ```
 Then navigate to `http://localhost:<host-port>/<endpoint>`
+
+A warning:
+Docker uses hypervisor to run containers on MacOS, which to my understanding does not allow GPU passthrough, so running this app on a Mac will be very slow. It's best to run it on a linux machine.
