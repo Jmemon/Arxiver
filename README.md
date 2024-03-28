@@ -22,19 +22,3 @@ Then navigate to `http://localhost:<host-port>/<endpoint>`
 
 A warning:
 Docker uses [hypervisor](https://developer.apple.com/documentation/hypervisor) to run containers on MacOS, which to my understanding does not allow GPU passthrough, so running this app on a Mac will be very slow. It's best to run it on linux. Docker says in the note at the top of [this](https://docs.docker.com/desktop/gpu/) page that it only supports GPUs for windows.
-
-I've been running the app in the cloud with [LambdaLabs](https://lambdalabs.com) using the following commands based on [this](https://docs.lambdalabs.com/software/virtual-environments-and-docker-containers#installing-docker-and-creating-a-container) doc:
-```bash
-sudo apt -y update && \
-sudo apt -y install nvidia-container-toolkit && \
-sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin && \
-sudo systemctl daemon-reload && \
-sudo systemctl restart docker
-
-sudo adduser "$(id -un)" docker
-```
-Exit and reopen shell.
-```bash
-sudo docker build -t arxiver-app .
-sudo docker run --gpus all -p 5000:5000 arxiver-app
-```
