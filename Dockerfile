@@ -5,9 +5,7 @@ FROM python:3.10.8-slim
 WORKDIR /Arxiver
 
 # Copy all repo files into the container's working directory
-COPY . /Arxiver/
-
-RUN mkdir qa_chain/weights
+COPY ./requirements.txt requirements.txt
 
 # install a C++ compiler for llama-cpp-python
 RUN apt-get update && \
@@ -18,6 +16,10 @@ RUN apt-get update && \
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install -U "huggingface_hub[cli]"
 
+COPY . /Arxiver/
+
+#RUN mkdir qa_chain/weights
+RUN mkdir -p qa_chain/weights
 RUN huggingface-cli download TheBloke/Mistral-7B-Instruct-v0.2-GGUF mistral-7b-instruct-v0.2.Q4_K_M.gguf --local-dir qa_chain/weights
 
 # Expose the port the app runs on
