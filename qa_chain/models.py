@@ -1,14 +1,9 @@
 
-import inspect
 from pathlib import Path
 
 from langchain_community.llms.llamacpp import LlamaCpp
-from langchain.callbacks.manager import CallbackManager
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
 from qa_chain import llama_path, starling_path, mistral_path, wizard_path
-
-callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
 
 
 def llama7b(
@@ -81,7 +76,7 @@ def mistral7b(
 
 
 def wizardlm13b(
-        model_path: Path = mistral_path,
+        model_path: Path = wizard_path,
         temperature: float = 0.75,
         max_tokens: int = 2000,
         top_p: float = 1,
