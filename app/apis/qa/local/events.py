@@ -3,7 +3,6 @@ import eventlet
 from flask_socketio import emit
 
 from app import socketio
-from qa_chain.models import mistral7b
 from app.apis.qa import pipeline
 
 stop_flag = False
