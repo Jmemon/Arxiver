@@ -4,8 +4,8 @@ from flask_socketio import emit
 
 from app import socketio
 from qa_chain.models import mistral7b
+from app.apis.qa import pipeline
 
-llm = mistral7b(max_tokens=1024, temperature=1, top_p=1)
 stop_flag = False
 
 
@@ -16,7 +16,7 @@ def handle_message(message):
     # Assuming message contains the prompt for the LLM
     prompt = message.get('prompt')
     if prompt:
-        for chunk in llm.stream(prompt):
+        for chunk in pipeline.stream(prompt):
             emit('response', {'data': chunk}, namespace='/qa')
 
             # This forces the server to take control for a brief second so the LLM isn't taking up

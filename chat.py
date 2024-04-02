@@ -2,9 +2,9 @@
 import eventlet
 eventlet.monkey_patch()
 
-from app import socketio, create_app
+from app import socketio, create_rag_chain_eval_app
 
-app = create_app()
+app = create_rag_chain_eval_app()
 
 
 if __name__ == '__main__':

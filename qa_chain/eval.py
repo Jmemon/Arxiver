@@ -1,8 +1,8 @@
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, Callable
+from typing import Iterable, Callable, List
 
 from langsmith import Client
 from dominate.tags import div, style, script, br, strong
@@ -68,6 +68,105 @@ ai_eval_queries = [
     'What are the implications of the research for AI governance?',
     'How does the paper contribute to the ethical design and deployment of AI technologies?'
 ]
+
+
+@dataclass
+class RunNode:
+    name: str
+    id: str
+    start_time: str
+    end_time: str
+    inputs: dict
+    outputs: dict
+    parent: object = field(default=None)
+    prev_sibling: object = field(default=None)
+    next_sibling: object = field(default=None)
+    sub_runs: List = field(default_factory=[])
+
+    def __call__(self, id):
+        for run in self.sub_runs:
+            if run.id == id:
+                return run
+
+    @staticmethod
+    def from_run(run):  # TODO: fix this and implement the wait dict for all levels of tree insertion
+        return cls(
+            name=run.name,
+            id=run.id,
+            start_time=run.start_time.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            end_time=run.end_time.strftime('%Y-%m-%dT%H:%M:%SZ'),
+            inputs=run.inputs,
+            output=run.outputs
+        )
+
+    @property
+    def parent_run_ids(self):
+        ids = []
+        curr_parent = self.parent
+        while curr_parent is not None:
+            ids.insert(0, curr_parent.id)
+            curr_parent = curr_parent.parent
+        return ids
+
+
+class RunTree:
+
+    def __init__(self, root):
+        assert len(root.parent_run_ids) == 0, 'A root run must not have any parent runs'
+        self.root: RunNode = RunNode.from_run(root)
+        self.trace_id = root.trace_id
+
+    def insert(self, run):
+        assert run.trace_id == self.trace_id, 'Mismatching trace ids. Passed run not a part of this trace.'
+        assert run.id != self.root.id, 'Passed the root node back into the tree'
+        # since the above two conditions are satisified, we must have non-root node that is part of this trace
+        # so we can set parent to self.root and iterate through parent_run_ids[1:]
+
+        parent = self.root
+        for next_parent_id in run.parent_run_ids[1:]:
+            parent = parent[next_parent_id]
+        
+        run_node.parent = parent
+        parent.sub_runs.insert(0, (run_node := RunNode.from_run(run)))
+        if len(parent.sub_runs) > 1:
+            run_node.next_sibling = parent.sub_runs[1]
+            run_node.next_subling.prev_sibling = run_node
+
+
+class RunForest:
+
+    def __init__(self, run_gen: Iterable):
+        self.trees = {}
+        wait_dict = {}
+        for run in run_gen:
+            if len(run.parent_run_ids) == 0:
+                self.trees[str(run.id)] = RunTree(run)
+                if str(run.id) in wait_dict:
+                    [self.trees[str(run.id)].insert(waiting_run) for waiting_run in wait_dict[str(run.id)]]
+                    del wait_dict[str(run.id)]
+
+            elif str(run.parent_run_ids[0]) in self.trees:
+                self.trees[str(run.parent_run_ids[0])].insert(run)
+
+            elif str(run.parent_run_ids[0]) in wait_dict:
+                wait_dict[str(run.parent_run_ids[0])].append(run)
+
+            else:
+                wait_dict[str(run.parent_run_ids[0])] = [run]
+
+    def traverse_tree(self, tree: RunTree, node_fxn: Callable):
+        node_stack = [tree.root]
+        node_outs = []
+
+        while len(node_stack) > 0:
+            curr_node = node_stack.pop()
+            node_outs.append(node_fxn(curr_node))
+            node_stack.extend(list(reversed(curr_node.sub_runs)))
+
+        return node_outs
+
+    def print(self):
+        [self.traverse_tree(tree, lambda nd: print(('\t' * len(nd.parent_run_ids)) + nd.name)) for tree in self.trees.values()]
 
 
 class RAGRunDebugDisplay:

@@ -38,7 +38,6 @@
         }
 
         socket.on('response', function(data) {
-            console.log(`${dt.getTime()}`)
             responseArea.innerHTML += data.data;
         });
     </script>
