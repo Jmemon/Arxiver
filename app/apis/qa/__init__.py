@@ -8,7 +8,7 @@ from utils import ARXIVER_PATH
 
 qa_blueprint = Blueprint('qa_api', __name__)
 
-if os.environ['ARXIVER_CLOUD'] is 'True':
+if os.environ['ARXIVER_CLOUD'] == 'True':
     """
     TODO:
     Programmatically launch lambda cloud gpu instance and load rag pipeline onto it, writing to stdout what's going on as it happens
