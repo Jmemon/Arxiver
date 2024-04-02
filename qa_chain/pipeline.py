@@ -12,7 +12,7 @@ from langchain_community.vectorstores.chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableSequence
 
-from unstructured.partition.auto import partition_pdf, PartitionStrategy
+from unstructured.partition.pdf import partition_pdf, PartitionStrategy
 
 from utils import get_version
 from qa_chain import vectorstore_dir
