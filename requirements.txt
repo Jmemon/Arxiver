@@ -12,4 +12,5 @@ tqdm==4.65.0
 unstructured==0.12.4
 pdf2image==1.17.0
 pdfminer.six==20221105
+pillow_heif==0.15.0
 llama_cpp_python
