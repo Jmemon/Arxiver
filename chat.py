@@ -21,6 +21,6 @@ if __name__ == '__main__':
 
     app = create_qa_app()
 
-    socketio.run(app, '0.0.0.0', 8080, log_output=True)
+    socketio.run(app, '0.0.0.0', 5000, log_output=True)
     #socketio.run(app, '192.168.1.5', 8080, log_output=True)
     #app.run('0.0.0.0', 8080)  # to find IP address

@@ -17,11 +17,26 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install -U "huggingface_hub[cli]"
 RUN pip install pyopenssl --upgrade
 
-RUN apt update
+RUN apt-get -y update
+RUN apt-get -y upgrade
 RUN apt-get -y install poppler-utils
 RUN apt-get -y install tesseract-ocr
 RUN apt-get -y install ffmpeg libsm6 libxext6
 
+# install newer version of sqlite3. For some reason apt only can see 3.34.1 which is too old. I need >= 3.35.0.
+RUN apt-get -y install build-essential wget
+WORKDIR /root
+RUN mkdir sqlite3 
+WORKDIR /root/sqlite3
+RUN wget https://www.sqlite.org/2024/sqlite-autoconf-3450200.tar.gz 
+RUN tar xzvf sqlite-autoconf-3450200.tar.gz
+WORKDIR /root/sqlite3/sqlite-autoconf-3450200
+RUN ./configure
+RUN make
+RUN make install
+RUN export PATH=$PATH:/usr/local/lib
+
+WORKDIR /Arxiver
 COPY . /Arxiver/
 
 #RUN mkdir qa_chain/weights
