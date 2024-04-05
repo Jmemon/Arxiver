@@ -17,7 +17,7 @@ if os.environ['ARXIVER_CLOUD'] == 'True':
     from .cloud import routes, events
 else:
     pipeline = get_simple_rag_chain(
-        [ARXIVER_PATH / 'papers' / 'mixtral_of_experts.pdf'], 
+        [ARXIVER_PATH / 'papers' / 'llm_apps' / 'mixtral_of_experts.pdf'], 
         'mixtral_of_experts')
 
     from .local import routes, events
