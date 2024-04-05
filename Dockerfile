@@ -15,6 +15,9 @@ RUN apt-get update && \
 # Install the Python dependencies from requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install -U "huggingface_hub[cli]"
+RUN pip install pyopenssl --upgrade
+RUN sudo apt-get -y install poppler-utils
+RUN sudo apt-get -y install tesseract-ocr
 
 COPY . /Arxiver/
 
