@@ -20,6 +20,7 @@ RUN pip install pyopenssl --upgrade
 RUN apt update
 RUN apt-get -y install poppler-utils
 RUN apt-get -y install tesseract-ocr
+RUN apt-get -y install ffmpeg libsm6 libxext6
 
 COPY . /Arxiver/
 
