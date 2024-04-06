@@ -31,10 +31,27 @@ WORKDIR /root/sqlite3
 RUN wget https://www.sqlite.org/2024/sqlite-autoconf-3450200.tar.gz 
 RUN tar xzvf sqlite-autoconf-3450200.tar.gz
 WORKDIR /root/sqlite3/sqlite-autoconf-3450200
-RUN ./configure
+RUN export CFLAGS="-DSQLITE_ENABLE_FTS3 \
+    -DSQLITE_ENABLE_FTS3_PARENTHESIS \
+    -DSQLITE_ENABLE_FTS4 \
+    -DSQLITE_ENABLE_FTS5 \
+    -DSQLITE_ENABLE_JSON1 \
+    -DSQLITE_ENABLE_LOAD_EXTENSION \
+    -DSQLITE_ENABLE_RTREE \
+    -DSQLITE_ENABLE_STAT4 \
+    -DSQLITE_ENABLE_UPDATE_DELETE_LIMIT \
+    -DSQLITE_SOUNDEX \
+    -DSQLITE_TEMP_STORE=3 \
+    -DSQLITE_USE_URI \
+    -O2 \
+    -fPIC"
+    
+RUN export PREFIX="/usr/local"
+RUN LIBS="-lm" ./configure --disable-tcl --enable-shared --enable-tempstore=always --prefix="$PREFIX"
 RUN make
 RUN make install
-RUN export PATH=$PATH:/usr/local/lib
+RUN export PATH=/usr/local/lib:$PATH
+RUN cp /root/sqlite3/sqlite-autoconf-3450200/.libs/libsqlite3.so.0 /usr/lib/x86_64-linux-gnu/libsqlite3.so.0
 
 WORKDIR /Arxiver
 COPY . /Arxiver/
