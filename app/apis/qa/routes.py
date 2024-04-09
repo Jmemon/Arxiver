@@ -1,7 +1,7 @@
 
 from flask import Blueprint, render_template
 
-from . import qa_blueprint
+from app.apis.qa import qa_blueprint
 
 
 @qa_blueprint.route('/qa', methods=['GET'])

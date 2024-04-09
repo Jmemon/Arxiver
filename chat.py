@@ -1,13 +1,18 @@
 
+from dotenv import load_dotenv
+
 import eventlet
 eventlet.monkey_patch()
 
-from app import socketio, create_app
+from app import socketio, create_qa_app
+from utils import ARXIVER_PATH
 
-app = create_app()
 
+load_dotenv(str(ARXIVER_PATH / '.env'))
 
 if __name__ == '__main__':
-    socketio.run(app, '0.0.0.0', 5000, log_output=True)
+    app = create_qa_app()
+
+    socketio.run(app, '0.0.0.0', 8080, log_output=True)
     #socketio.run(app, '192.168.1.5', 8080, log_output=True)
     #app.run('0.0.0.0', 8080)  # to find IP address
