@@ -1,15 +1,4 @@
 
-from dataclasses import dataclass, field
-from datetime import datetime
-from pathlib import Path
-from typing import Iterable, Callable, List
-
-from langsmith import Client
-from dominate.tags import div, style, script, br, strong
-from dominate.document import document
-from dominate.util import raw, text
-
-
 # I genereted these with ChatGPT: "Can you generate 50 questions that could be asked of an arbitrary AI research paper?"
 ai_eval_queries = [
     'What specific AI technology or model does the paper focus on?',
@@ -58,5 +47,35 @@ ai_eval_queries = [
     'What are the global implications of the research findings?',
     'How does the paper address the challenge of AI model reproducibility?',
     'What are the implications of the research for AI governance?',
-    'How does the paper contribute to the ethical design and deployment of AI technologies?'
+    'How does the paper contribute to the ethical design and deployment of AI technologies?',
+    'How do application architectures for LLMs differ for cloud-based versus edge computing environments?',
+    'What are the critical considerations in designing application architectures for real-time LLM applications?',
+    'Describe how containerization technologies like Docker can be used with LLMs to improve deployment flexibility.',
+    'In what ways do microservices architectures benefit the scalability and maintainability of LLM applications?',
+    'How can LLMs be integrated into existing legacy systems within enterprise architectures?',
+    'What advancements in LLM architectures have enabled better handling of context and memory?',
+    'How do different attention mechanisms in LLM architectures affect their language comprehension abilities?',
+    'Discuss the impact of layer normalization techniques on the training stability of LLMs.',
+    'Compare the efficiency of sparse versus dense architectures in LLMs.',
+    'Explain how hybrid architectures combine the strengths of CNNs and RNNs with transformer models in LLMs.',
+    'What role does hardware acceleration (e.g., GPUs, TPUs) play in optimizing LLM inference?',
+    'Discuss the benefits and trade-offs of using distillation methods for LLM inference optimization.',
+    'How does dynamic batching improve the efficiency of LLM inference?',
+    'Describe the challenges and solutions in optimizing LLMs for low-resource languages.',
+    'Explain the use of adaptive computation time (ACT) techniques in LLM inference optimization.',
+    'How does the choice of knowledge base affect the performance of retrieval-augmented generation in LLMs?',
+    'Discuss the mechanisms of incorporating real-time web search results into LLM responses.',
+    'What are the challenges in ensuring the relevance and accuracy of retrieved information in RAG models?',
+    'Compare the effectiveness of different retrieval strategies used in RAG for LLMs.',
+    'Explain how RAG models balance the trade-off between retrieval latency and response quality.',
+    'Describe the role of LLMs in developing conversational agents for customer service applications.',
+    'How do reinforcement learning techniques enhance the capabilities of LLM-based agents?',
+    'Discuss the ethical considerations in deploying autonomous agents powered by LLMs in public domains.',
+    'What are the key challenges in training LLM-based agents for multi-agent systems?',
+    'Explain the integration of LLMs with IoT devices in creating smart agents for home automation.',
+    'How can prompt engineering be used to guide LLMs in generating creative content?',
+    'What strategies exist for minimizing biases in LLM responses through careful prompt engineering?',
+    'Discuss the role of zero-shot and few-shot learning in the context of prompt engineering for LLMs.',
+    'How does prompt engineering affect the interpretability of LLM responses?',
+    'Compare the effectiveness of manual versus automated prompt engineering techniques.',
 ]
