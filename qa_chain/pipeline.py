@@ -1,22 +1,23 @@
 
 from datetime import datetime
+from dotenv import load_dotenv
 from functools import reduce
+import os
 from pathlib import Path
 import sqlite3
 from typing import List
 
 from langchain.prompts import PromptTemplate
 from langchain.docstore.document import Document
+from langchain_openai.llms import OpenAI
 from langchain_community.embeddings.huggingface import HuggingFaceBgeEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableSequence
-
 from unstructured.partition.pdf import partition_pdf, PartitionStrategy
 
 from utils import get_version
 from qa_chain import vectorstore_dir
-from qa_chain.models import mistral7b
 
 
 def get_pdf_chunks(paper_path: Path) -> List[str]:
@@ -82,7 +83,7 @@ def get_text_vectorstore(paper_paths: List[Path] | Path, vdb_name: str | None = 
 def get_simple_rag_chain(papers: List[Path], vdb_name: str | None = None, callbacks: List | None = None) -> RunnableSequence:
     if callbacks is None:
         callbacks = []
-    
+
     retriever = (
         get_text_vectorstore(papers, vdb_name).as_retriever(search_kwargs={'k': 6})
         | (lambda doc_list: '\n\n'.join([doc.page_content for doc in doc_list]))
@@ -106,13 +107,19 @@ def get_simple_rag_chain(papers: List[Path], vdb_name: str | None = None, callba
                 'Answer: [/INST]'
     ).with_config({'handlers': callbacks})
 
-    mistral = mistral7b(n_ctx=3072, max_tokens=None).with_config({'handlers': callbacks})
+    # mistral = mistral7b(n_ctx=3072, max_tokens=None).with_config({'handlers': callbacks})
+    llm = OpenAI(
+        openai_api_key=os.environ.get('ANYSCALE_API_KEY'), 
+        openai_api_base=os.environ.get('ANYSCALE_API_BASE'),
+        model_name='mistralai/Mistral-7B-Instruct-v0.1',
+        streaming=True
+    )
 
     return (
         {'context': retriever, 'question': RunnablePassthrough()}
         | prompt_templ
-        | mistral
-        | StrOutputParser().with_config({'handlers': callbacks})
+        | llm
+        | StrOutputParser()
     ).with_config({
         'metadata': {
             'version': get_version()
