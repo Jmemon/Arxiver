@@ -11,14 +11,19 @@ Currently we use a naive RAG architecture consisting of HuggingFaceEmbeddings, C
 
 Using python version 3.10.8.
 
-To run the app:
-```
-git clone https://github.com/Jmemon/Arxiver.git
-cd Arxiver
-docker build -t arxiver-app .
-docker run -p <host-port>:5000 arxiver-app
-```
-Then navigate to `http://localhost:<host-port>/<endpoint>`
 
-A warning:
-Docker uses [hypervisor](https://developer.apple.com/documentation/hypervisor) to run containers on MacOS, which to my understanding does not allow GPU passthrough, so running this app on a Mac will be very slow. It's best to run it on linux. Docker says in the note at the top of [this](https://docs.docker.com/desktop/gpu/) page that it only supports GPUs for windows.
+<details>
+  <summary>ignore for now</summary>
+
+  To run the app:
+  ```
+  git clone https://github.com/Jmemon/Arxiver.git
+  cd Arxiver
+  docker build -t arxiver-app .
+  docker run -p <host-port>:5000 arxiver-app
+  ```
+  Then navigate to `http://localhost:<host-port>/<endpoint>`
+  
+  A warning:
+  Docker uses [hypervisor](https://developer.apple.com/documentation/hypervisor) to run containers on MacOS, which to my understanding does not allow GPU passthrough, so running this app on a Mac will be very slow. It's best to run it on linux. Docker says in the note at the top of [this](https://docs.docker.com/desktop/gpu/) page that it only supports GPUs for windows.
+</details>
