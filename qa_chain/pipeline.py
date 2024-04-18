@@ -13,7 +13,7 @@ from langchain_openai.llms import OpenAI
 from langchain_community.embeddings.huggingface import HuggingFaceBgeEmbeddings
 from langchain_community.vectorstores.chroma import Chroma
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough, RunnableSequence
+from langchain_core.runnables import RunnablePassthrough, RunnableSequence, RunnableParallel
 from unstructured.partition.pdf import partition_pdf, PartitionStrategy
 
 from utils import get_version
@@ -80,40 +80,63 @@ def get_text_vectorstore(paper_paths: List[Path] | Path, vdb_name: str | None = 
     return vdb
 
 
-def get_simple_rag_chain(papers: List[Path], vdb_name: str | None = None, callbacks: List | None = None) -> RunnableSequence:
-    if callbacks is None:
-        callbacks = []
-
-    retriever = (
+def get_retriever(papers: List[Path], vdb_name: str | None = None):
+    return (
         get_text_vectorstore(papers, vdb_name).as_retriever(search_kwargs={'k': 6})
         | (lambda doc_list: '\n\n'.join([doc.page_content for doc in doc_list]))
-    ).with_config({
-            'metadata': {
-                'sources': [paper.name for paper in papers]
-            },
-            'tags': ['Chroma', HuggingFaceBgeEmbeddings.__name__],
-            'handlers': callbacks
-        }
     )
 
-    prompt_templ = PromptTemplate(
-            input_variables=['question', 'context'],
-            template=''
-                '<s> [INST] You are an assistant for question-answering tasks. Use the following pieces of '
-                'retrieved context to answer the question. If the context doesn\'t seem relevant to the question, '
-                'say that you don\'t know and that the question might not be relevant. [/INST] </s> \n'
-                '[INST] Question: {question} \n'
-                'Context: {context} \n'
-                'Answer: [/INST]'
-    ).with_config({'handlers': callbacks})
 
-    # mistral = mistral7b(n_ctx=3072, max_tokens=None).with_config({'handlers': callbacks})
-    llm = OpenAI(
+def get_prompt_template():
+    return PromptTemplate(
+        input_variables=['question', 'context'],
+        template=''
+            '<s> [INST] You are an assistant for question-answering tasks. Use the following pieces of '
+            'retrieved context to answer the question. If the context doesn\'t seem relevant to the question, '
+            'say that you don\'t know and that the question might not be relevant. [/INST] </s> \n'
+            '[INST] Question: {question} \n'
+            'Context: {context} \n'
+            'Answer: [/INST]'
+    )
+
+
+def get_llm():
+    return OpenAI(
         openai_api_key=os.environ.get('ANYSCALE_API_KEY'), 
         openai_api_base=os.environ.get('ANYSCALE_API_BASE'),
         model_name='mistralai/Mistral-7B-Instruct-v0.1',
         streaming=True
     )
+
+
+def get_rag_chain(
+        papers: List[Path], 
+        vdb_name: str | None = None, 
+        retriever_cbs: List | None = None,
+        prompt_cbs: List | None = None,
+        llm_cbs: List | None = None,
+        chain_cbs: List | None = None
+) -> RunnableSequence:
+    if chain_cbs is None:
+        chain_cbs = []
+    
+    for cbs in [retriever_cbs, prompt_cbs, llm_cbs, chain_cbs]:
+        if cbs is None:
+            cbs = []
+
+    retriever = get_retriever(papers, vdb_name).with_config(
+        {
+            'callbacks': retriever_cbs,
+            'metadata': {
+                'sources': [paper.name for paper in papers]
+            },
+            'tags': ['Chroma', HuggingFaceBgeEmbeddings.__name__]
+        }
+    )
+
+    prompt_templ = get_prompt_template().with_config({'callbacks': prompt_cbs})
+
+    llm = get_llm().with_config({'callbacks': llm_cbs})
 
     return (
         {'context': retriever, 'question': RunnablePassthrough()}
@@ -121,34 +144,8 @@ def get_simple_rag_chain(papers: List[Path], vdb_name: str | None = None, callba
         | llm
         | StrOutputParser()
     ).with_config({
+        'callbacks': chain_cbs,
         'metadata': {
             'version': get_version()
-        },
-        'tags': ['simple_rag_chain']
+        }
     })
-
-
-"""
-if __name__ == '__main__':
-    load_dotenv()
-
-    rag_chain = (
-        {
-            'context': get_text_vectorstore(
-                            [Path(__file__).parent.parent / 'papers' / 'llm_apps' / 'mixtral_of_experts.pdf'],
-                            'mixtral_of_experts') 
-                        | format_docs, 
-            'question': RunnablePassthrough()}
-        | PromptTemplate(
-                input_variables=['question', 'context'],
-                template=''
-                    '<s> [INST] You are an assistant for question-answering tasks. Use the following pieces of '
-                    'retrieved context to answer the question. If you don\'t know the answer, just say that you '
-                    'don\'t know. [/INST] </s> \n'
-                    '[INST] Question: {question} \n'
-                    'Context: {context} \n'
-                    'Answer: [/INST]'
-            )
-        | mistral7b(n_ctx=2048, max_tokens=None)
-        | StrOutputParser()
-    )"""

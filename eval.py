@@ -1,6 +1,17 @@
 
+from datetime import datetime
+
+from dotenv import load_dotenv
+
+from langchain_core.runnables import RunnableLambda
+import langsmith
+
+from qa_chain.pipeline import get_rag_chain
+from utils import ARXIVER_PATH, LOGS_PATH
+
+
 # I genereted these with ChatGPT: "Can you generate 50 questions that could be asked of an arbitrary AI research paper?"
-ai_eval_queries = [
+eval_queries = [
     'What specific AI technology or model does the paper focus on?',
     'What are the primary research objectives of the study?',
     'How does the paper contribute to the field of artificial intelligence?',
@@ -79,3 +90,21 @@ ai_eval_queries = [
     'How does prompt engineering affect the interpretability of LLM responses?',
     'Compare the effectiveness of manual versus automated prompt engineering techniques.',
 ]
+
+
+if __name__ == '__main__':
+    load_dotenv()
+
+    chain = get_rag_chain(
+        [ARXIVER_PATH / 'papers' / 'llm_apps' / 'mixtral_of_experts.pdf'], 
+        'mixtral_of_experts',
+    )
+
+    client = langsmith.Client()
+    chain_results = client.run_on_dataset(
+        dataset_name="arxiver-mixtral-of-experts-no-output",
+        llm_or_chain_factory=RunnableLambda(lambda dct: dct['input']) | chain,
+        project_name=f"arxiver-{datetime.now().strftime('%y%m%d_%H%M%S')}",
+        concurrency_level=5,
+        verbose=True
+    )
